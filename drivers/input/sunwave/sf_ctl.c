@@ -54,7 +54,8 @@
 #include <linux/notifier.h>
 
 #if ANDROID_WAKELOCK
-#include <linux/wakelock.h>
+#include <linux/device.h>
+#include <linux/pm_wakeup.h>
 #endif
 
 #include <linux/mdss_io_util.h>
@@ -110,7 +111,7 @@ struct sf_ctl_device {
     struct work_struct work_queue;
     struct input_dev *input;
 #if ANDROID_WAKELOCK
-    struct wake_lock wakelock;
+    struct wakeup_source wakelock;
 #endif
     struct notifier_block notifier;
     char wait_finger_down;
@@ -407,7 +408,7 @@ static irqreturn_t sf_ctl_device_irq(int irq, void *dev_id)
     xprintk(KERN_ERR, "%s(irq = %d, ..) toggled.\n", __FUNCTION__, irq);
     schedule_work(&sf_ctl_dev->work_queue);
 #if ANDROID_WAKELOCK
-    wake_lock_timeout(&sf_ctl_dev->wakelock, msecs_to_jiffies(3000));
+    __pm_wakeup_event(&sf_ctl_dev->wakelock, msecs_to_jiffies(3000));
 #endif
     if (sf_ctl_dev->wait_finger_down == true && screenStatus == 0) {
         input_report_key(sf_ctl_dev->input, KEY_INPUT_FP_TAP, 1);
@@ -782,7 +783,7 @@ static int __init sf_ctl_driver_init(void)
     int err = 0;
     int id_value = 0;
 #if ANDROID_WAKELOCK
-    wake_lock_init(&sf_ctl_dev.wakelock, WAKE_LOCK_SUSPEND, "sf_wakelock");
+    wakeup_source_init(&sf_ctl_dev.wakelock, "sf_wakelock");
 #endif
     /* Initialize the GPIO pins. */
     err = sf_ctl_init_gpio_pins();
@@ -875,7 +876,7 @@ static void __exit sf_ctl_driver_exit(void)
         gpio_free(sf_ctl_dev.reset_num);
     }
 #if ANDROID_WAKELOCK
-    wake_lock_destroy(&sf_ctl_dev.wakelock);
+    wakeup_source_trash(&sf_ctl_dev.wakelock);
 #endif
     misc_deregister(&sf_ctl_dev.miscdev);
     sf_spi_platform_exit();

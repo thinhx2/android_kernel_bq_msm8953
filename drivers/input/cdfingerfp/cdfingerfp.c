@@ -16,7 +16,8 @@
 #include <linux/io.h>
 #include <linux/spinlock.h>
 #include <linux/sched.h>
-#include <linux/wakelock.h>
+#include <linux/device.h>
+#include <linux/pm_wakeup.h>
 #include <linux/kthread.h>
 #include <linux/cdev.h>
 #include <linux/fs.h>
@@ -143,7 +144,7 @@ struct cdfingerfp_data {
 	u32 pwr_num;
 	struct regulator *vdd;
 	struct fasync_struct *async_queue;
-	struct wake_lock cdfinger_lock;
+	struct wakeup_source cdfinger_lock;
 	struct notifier_block notifier;
 	struct mutex buf_lock;
 	struct input_dev* cdfinger_input;
@@ -364,7 +365,7 @@ static int cdfinger_release(struct inode *inode,struct file *file)
 static void cdfinger_async_report(void)
 {
 	struct cdfingerfp_data *cdfingerfp = g_cdfingerfp_data;
-	wake_lock_timeout(&cdfingerfp->cdfinger_lock, msecs_to_jiffies(1000));
+	__pm_wakeup_event(&cdfingerfp->cdfinger_lock, msecs_to_jiffies(1000));
 	kill_fasync(&cdfingerfp->async_queue,SIGIO,POLL_IN);
 }
 
@@ -411,10 +412,10 @@ static void cdfinger_wake_lock(struct cdfingerfp_data *pdata,int arg)
 {
 	if(arg)
 	{
-		wake_lock(&pdata->cdfinger_lock);
+		__pm_stay_awake(&pdata->cdfinger_lock);
 	}else{
-		wake_unlock(&pdata->cdfinger_lock);
-		wake_lock_timeout(&pdata->cdfinger_lock, msecs_to_jiffies(3000));
+		__pm_relax(&pdata->cdfinger_lock);
+		__pm_wakeup_event(&pdata->cdfinger_lock, msecs_to_jiffies(3000));
 	}
 }
 
@@ -682,7 +683,7 @@ static int cdfinger_probe(struct platform_device *pdev)
 	}
 	cdfingerdev->miscdev = &st_cdfinger_dev;
 	mutex_init(&cdfingerdev->buf_lock);
-	wake_lock_init(&cdfingerdev->cdfinger_lock, WAKE_LOCK_SUSPEND, "cdfinger wakelock");
+	wake_lock_init(&cdfingerdev->cdfinger_lock, "cdfinger wakelock");
 
 	cdfingerdev->cdfinger_input = input_allocate_device();
 	if(!cdfingerdev->cdfinger_input){

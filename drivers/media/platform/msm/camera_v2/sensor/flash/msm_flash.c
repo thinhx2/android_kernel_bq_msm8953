@@ -759,11 +759,13 @@ static int32_t msm_flash_init(
 
 	CDBG("Enter");
 
+#ifndef CONFIG_TOWA_PRODUCT
 	if (flash_ctrl->flash_state == MSM_CAMERA_FLASH_INIT) {
 		pr_err("%s:%d Invalid flash state = %d",
 			__func__, __LINE__, flash_ctrl->flash_state);
 		return 0;
 	}
+#endif
 
 	if (flash_data->cfg.flash_init_info->flash_driver_type ==
 		FLASH_DRIVER_DEFAULT) {
@@ -1026,9 +1028,50 @@ static int32_t msm_flash_config(struct msm_flash_ctrl_t *flash_ctrl,
 				flash_ctrl->flash_state);
 		}
 		break;
-	default:
-		rc = -EFAULT;
+#ifdef CONFIG_TOWA_PRODUCT
+	case CFG_TORCH_HIGH:
+		if ((flash_ctrl->flash_state != MSM_CAMERA_FLASH_RELEASE) &&
+			(flash_ctrl->flash_state != MSM_CAMERA_TORCH_HIGH) &&
+			flash_ctrl->func_tbl->camera_flash_torch_high){
+			rc = flash_ctrl->func_tbl->camera_flash_torch_high(
+				flash_ctrl, flash_data);
+			if(!rc)
+				flash_ctrl->flash_state = MSM_CAMERA_TORCH_HIGH;
+		}else{
+			CDBG(pr_fmt("Invalid state : %d\n"),
+				flash_ctrl->flash_state);
+		}
 		break;
+	case CFG_TORCH_MID:
+		if ((flash_ctrl->flash_state != MSM_CAMERA_FLASH_RELEASE) &&
+			(flash_ctrl->flash_state != MSM_CAMERA_TORCH_MID) &&
+			flash_ctrl->func_tbl->camera_flash_torch_mid){
+			rc = flash_ctrl->func_tbl->camera_flash_torch_mid(
+				flash_ctrl, flash_data);
+			if(!rc)
+				flash_ctrl->flash_state = MSM_CAMERA_TORCH_MID;
+		}else{
+			CDBG(pr_fmt("Invalid state : %d\n"),
+				flash_ctrl->flash_state);
+		}
+		break;
+	case CFG_TORCH_LOW:
+		if ((flash_ctrl->flash_state != MSM_CAMERA_FLASH_RELEASE) &&
+			(flash_ctrl->flash_state != MSM_CAMERA_TORCH_LOW) &&
+			flash_ctrl->func_tbl->camera_flash_torch_low){
+			rc = flash_ctrl->func_tbl->camera_flash_torch_low(
+				flash_ctrl, flash_data);
+			if(!rc)
+				flash_ctrl->flash_state = MSM_CAMERA_TORCH_LOW;
+		}else{
+			CDBG(pr_fmt("Invalid state : %d\n"),
+				flash_ctrl->flash_state);
+		}
+		break;
+#endif
+        default:
+            rc = -EFAULT;
+            break;
 	}
 
 	mutex_unlock(flash_ctrl->flash_mutex);
@@ -1330,12 +1373,19 @@ static int32_t msm_flash_get_dt_data(struct device_node *of_node,
 		case 3:
 			fctrl->flash_driver_type = FLASH_DRIVER_GPIO;
 			break;
+#ifdef CONFIG_TOWA_PRODUCT
+		case 4:
+			fctrl->flash_driver_type = FLASH_DRIVER_AW3640;
+			break;
+		case 5:
+			fctrl->flash_driver_type = FLASH_DRIVER_SGM3785;
+			break;
+#endif
 		default:
 			fctrl->flash_driver_type = FLASH_DRIVER_DEFAULT;
 			break;
 	}
 	pr_info("flash_driver_type %d", fctrl->flash_driver_type);
-
 	/* Read the CCI master. Use M0 if not available in the node */
 	rc = of_property_read_u32(of_node, "qcom,cci-master",
 		&fctrl->cci_i2c_master);
@@ -1376,6 +1426,22 @@ static int32_t msm_flash_get_dt_data(struct device_node *of_node,
 #ifdef AW3640_FLASH
 if (fctrl->flash_driver_type == FLASH_DRIVER_AW3640)
 {
+//front torch
+#if 0
+	fctrl->front_gpio_torch = of_get_named_gpio(of_node, "front-gpio-torch", 0);
+	rc  =  of_property_read_string_index(of_node,"qcom,front-gpios-torch-label",
+                                                                0,&fctrl->front_gpio_torch_labs);
+	if(rc < 0) {
+              pr_err("%d:get front torch gpio -label failed \n",__LINE__);
+              rc = 0;
+	} else {
+              rc = gpio_request_one(fctrl->front_gpio_torch,0,fctrl->front_gpio_torch_labs);
+              if(rc < 0){
+		       pr_err("%d:request front torch gpio  failed \n",__LINE__);
+		       rc = 0;
+              }
+	}
+#endif
 //front flash
 	fctrl->front_gpio_flash = of_get_named_gpio(of_node, "front-gpio-flash", 0);
 	rc  =  of_property_read_string_index(of_node,"qcom,front-gpios-flash-label",
@@ -1546,7 +1612,10 @@ static int msm_camera_flash_i2c_probe(struct i2c_client *client,
 		kfree(flash_ctrl);
 		return -EINVAL;
 	}
-
+#ifdef CONFIG_TOWA_PRODUCT
+	flash_ctrl->front_flash_init=FALSE;
+	flash_ctrl->rear_flash_init=FALSE;
+#endif
 	flash_ctrl->flash_state = MSM_CAMERA_FLASH_RELEASE;
 	flash_ctrl->power_info.dev = &client->dev;
 	flash_ctrl->flash_device_type = MSM_CAMERA_I2C_DEVICE;

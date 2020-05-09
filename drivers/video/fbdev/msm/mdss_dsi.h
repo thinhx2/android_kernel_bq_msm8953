@@ -444,6 +444,12 @@ struct mdss_dsi_ctrl_pdata {
 	bool bklt_en_gpio_invert;
 	int lcd_mode_sel_gpio;
 	int bklt_ctrl;	/* backlight ctrl */
+#ifdef CONFIG_TOWA_PRODUCT
+	int disp_vsp_gpio;
+	int disp_vsn_gpio;
+	int disp_bl_en_gpio;
+	int tp_reset_gpio;
+#endif
 	enum dsi_ctrl_op_mode bklt_dcs_op_mode; /* backlight dcs ctrl mode */
 	bool pwm_pmi;
 	int pwm_period;

@@ -1423,6 +1423,20 @@ config FT_SECURE_TOUCH
 
 	  If unsure, say N.
 
+config TOUCHSCREEN_NT36572_ZQL1818
+	bool "Novatek NT36572"
+	depends on I2C
+	help
+	  Say Y here if you have a Novatek NT36xxx touchscreen connected
+	  to your system.
+          If unsure, say N.
+          
+config TOUCHSCREEN_TP_VERSION
+	default n
+	bool "Touchpanel version"
+	help
+	  Say Y here if you have the touchpanel version
+
 config TOUCHSCREEN_GT9XX_v28
 	bool "Goodix touchpanel GT9xx_v28 series"
 	depends on I2C

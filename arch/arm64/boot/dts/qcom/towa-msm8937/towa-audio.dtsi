@@ -28,3 +28,11 @@
         "AMIC2", "MIC BIAS Internal2";
     };
 };
+
+&msm_digital_codec {
+	status = "okay";
+};
+
+&pmic_analog_codec {
+	status = "okay";
+};

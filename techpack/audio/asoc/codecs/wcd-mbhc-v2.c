@@ -33,6 +33,14 @@
 #include "wcd-mbhc-adc.h"
 #include "wcd-mbhc-v2-api.h"
 
+#ifdef CONFIG_TOWA_PRODUCT
+extern int aw8737_pa_mode;
+#endif
+
+#ifdef CONFIG_TOWA_PRODUCT
+	WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_FSM_EN, 0);
+#endif
+
 void wcd_mbhc_jack_report(struct wcd_mbhc *mbhc,
 			  struct snd_soc_jack *jack, int status, int mask)
 {
@@ -490,7 +498,14 @@ static void wcd_mbhc_set_and_turnoff_hph_padac(struct wcd_mbhc *mbhc)
 	} else {
 		pr_debug("%s PA is off\n", __func__);
 	}
+#ifdef CONFIG_TOWA_PRODUCT
+	if (!aw8737_pa_mode) {
+		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_HPH_PA_EN, 0);
+	}
+#else
 	WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_HPH_PA_EN, 0);
+#endif
+
 	usleep_range(wg_time * 1000, wg_time * 1000 + 50);
 
 

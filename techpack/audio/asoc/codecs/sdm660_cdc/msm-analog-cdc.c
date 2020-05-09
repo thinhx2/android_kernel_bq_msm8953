@@ -87,6 +87,72 @@ static struct snd_soc_dai_driver msm_anlg_cdc_i2s_dai[];
 /* By default enable the internal speaker boost */
 static bool spkr_boost_en = true;
 
+#ifdef CONFIG_TOWA_PRODUCT
+extern int aw8737_pa_ctrl_gpio;
+int aw8737_pa_mode = 2;
+#endif
+
+#ifdef CONFIG_TOWA_PRODUCT
+static int aw8737_pa_mode_get(struct snd_kcontrol *kcontrol,
+     struct snd_ctl_elem_value *ucontrol)
+{
+    struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+
+    ucontrol->value.integer.value[0] = aw8737_pa_mode;
+    dev_dbg(codec->dev, "%s: ucontrol->value.integer.value[0] = %ld\n",
+            __func__, ucontrol->value.integer.value[0]);
+
+    return 0;
+}
+
+static int aw8737_pa_mode_set(struct snd_kcontrol *kcontrol,
+    struct snd_ctl_elem_value *ucontrol)
+{
+    int i;
+
+    pr_info("%s: aw8737 set mode: %ld\n",  __func__, ucontrol->value.integer.value[0]);
+    aw8737_pa_mode = ucontrol->value.integer.value[0];
+    switch (aw8737_pa_mode) {
+        case 0:
+             if(gpio_is_valid(aw8737_pa_ctrl_gpio))
+                 gpio_direction_output(aw8737_pa_ctrl_gpio, 0);
+             break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+             if(gpio_is_valid(aw8737_pa_ctrl_gpio)) {
+                 msleep(80);
+                 for(i = 0; i < aw8737_pa_mode; i++) {
+                     gpio_direction_output(aw8737_pa_ctrl_gpio, 0);
+                     udelay(2);
+                     gpio_direction_output(aw8737_pa_ctrl_gpio, 1);
+                     udelay(2);
+                 }
+             }
+             break;
+        default:
+             return -EINVAL;
+    }
+
+    return 0;
+}
+#endif
+
+#ifdef CONFIG_TOWA_PRODUCT
+static const char const *aw8737_pa_mode_text[] = {"DISABLE","MODE_1",
+                    "MODE_2", "MODE_3","MODE_4"};
+static const struct soc_enum aw8737_pa_mode_enum[] = {
+		SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(aw8737_pa_mode_text),
+			aw8737_pa_mode_text),
+};
+#endif
+
+#ifdef CONFIG_TOWA_PRODUCT
+       SOC_ENUM_EXT("AW8737 PA Mode", aw8737_pa_mode_enum[0],
+		aw8737_pa_mode_get, aw8737_pa_mode_set),
+#endif
+
 static char on_demand_supply_name[][MAX_ON_DEMAND_SUPPLY_NAME_LENGTH] = {
 	"cdc-vdd-mic-bias",
 	"",

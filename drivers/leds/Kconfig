@@ -429,13 +429,6 @@ config LEDS_KTD2026
           This option enables support for KTD2026 RGB LED driver chips
           accessed via the I2C bus.
 
-config LEDS_AW2016A
-	tristate "qiantao add LED Support for AW2016"
-	depends on LEDS_CLASS && I2C
-	help
-	  this option enables support for the AW2015 RGB LED connected
-	  through I2C. Say Y to enable support for the AW2016 LED.
-
 config LEDS_BD2802
 	tristate "LED driver for BD2802 RGB LED"
 	depends on LEDS_CLASS

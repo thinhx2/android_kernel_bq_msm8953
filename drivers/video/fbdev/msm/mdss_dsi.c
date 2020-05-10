@@ -478,7 +478,7 @@ static int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 #endif
 #ifdef CONFIG_TOWA_PRODUCT
 	if (hx_smwp_en_flag == 1) {
-		ret = msm_dss_enable_vreg(
+		ret = msm_mdss_enable_vreg(
 			ctrl_pdata->panel_power_data.vreg_config,
 			ctrl_pdata->panel_power_data.num_vreg, 1);
 	} else 

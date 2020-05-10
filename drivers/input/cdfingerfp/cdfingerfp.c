@@ -683,7 +683,7 @@ static int cdfinger_probe(struct platform_device *pdev)
 	}
 	cdfingerdev->miscdev = &st_cdfinger_dev;
 	mutex_init(&cdfingerdev->buf_lock);
-	wake_lock_init(&cdfingerdev->cdfinger_lock, "cdfinger wakelock");
+	wakeup_source_init(&cdfingerdev->cdfinger_lock, "cdfinger wakelock");
 
 	cdfingerdev->cdfinger_input = input_allocate_device();
 	if(!cdfingerdev->cdfinger_input){
